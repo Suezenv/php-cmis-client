@@ -1,8 +1,8 @@
 <?php
 namespace Dkd\PhpCmis\Bindings\Browser;
 
-/*
- * This file is part of php-cmis-client.
+/**
+ * This file is part of php-cmis-lib.
  *
  * (c) Sascha Egerer <sascha.egerer@dkd.de>
  *
@@ -11,9 +11,11 @@ namespace Dkd\PhpCmis\Bindings\Browser;
  */
 
 use Dkd\PhpCmis\Constants;
+use Dkd\PhpCmis\Data;
 use Dkd\PhpCmis\Data\ExtensionDataInterface;
 use Dkd\PhpCmis\Data\ObjectListInterface;
 use Dkd\PhpCmis\DiscoveryServiceInterface;
+use Dkd\PhpCmis\Enum;
 use Dkd\PhpCmis\Enum\IncludeRelationships;
 
 /**
@@ -57,26 +59,28 @@ class DiscoveryService extends AbstractBrowserBindingService implements Discover
         $url = $this->getRepositoryUrl($repositoryId, Constants::SELECTOR_CONTENT_CHANGES);
 
         $url->getQuery()->modify(
-            [
+            array(
                 Constants::PARAM_PROPERTIES => $includeProperties ? 'true' : 'false',
                 Constants::PARAM_POLICY_IDS => $includePolicyIds ? 'true' : 'false',
                 Constants::PARAM_ACL => $includeAcl ? 'true' : 'false',
                 Constants::PARAM_SUCCINCT => $this->getSuccinct() ? 'true' : 'false',
-            ]
+            )
         );
 
         if ($changeLogToken !== null) {
-            $url->getQuery()->modify([Constants::PARAM_CHANGE_LOG_TOKEN => (string) $changeLogToken]);
+            $url->getQuery()->modify(array(Constants::PARAM_CHANGE_LOG_TOKEN => (string) $changeLogToken));
         }
 
         if ($maxItems > 0) {
-            $url->getQuery()->modify([Constants::PARAM_MAX_ITEMS => (string) $maxItems]);
+            $url->getQuery()->modify(array(Constants::PARAM_MAX_ITEMS => (string) $maxItems));
         }
 
-        $responseData = (array) $this->readJson($url);
+        $responseData = $this->read($url)->json();
 
         // $changeLogToken was passed by reference. The value is changed here
-        $changeLogToken = $responseData[JSONConstants::JSON_OBJECTLIST_CHANGE_LOG_TOKEN] ?? null;
+        if ($changeLogToken!==null && isset($responseData[JSONConstants::JSON_OBJECTLIST_CHANGE_LOG_TOKEN])) {
+            $changeLogToken = (string) $responseData[JSONConstants::JSON_OBJECTLIST_CHANGE_LOG_TOKEN];
+        }
 
         // TODO Implement Cache
         return $this->getJsonConverter()->convertObjectList($responseData);
@@ -121,25 +125,27 @@ class DiscoveryService extends AbstractBrowserBindingService implements Discover
         $url = $this->getRepositoryUrl($repositoryId);
 
         $url->getQuery()->modify(
-            [
-                Constants::CONTROL_CMISACTION => Constants::CMISACTION_QUERY,
+            array(
+                Constants::PARAM_SELECTOR => Constants::CMISACTION_QUERY,
                 Constants::PARAM_STATEMENT => (string) $statement,
                 Constants::PARAM_SEARCH_ALL_VERSIONS => $searchAllVersions ? 'true' : 'false',
                 Constants::PARAM_ALLOWABLE_ACTIONS => $includeAllowableActions ? 'true' : 'false',
                 Constants::PARAM_RENDITION_FILTER => $renditionFilter,
                 Constants::PARAM_SKIP_COUNT => (string) $skipCount,
                 Constants::PARAM_DATETIME_FORMAT => (string) $this->getDateTimeFormat()
-            ]
+            )
         );
 
         if ($includeRelationships !== null) {
-            $url->getQuery()->modify([Constants::PARAM_RELATIONSHIPS => (string) $includeRelationships]);
+            $url->getQuery()->modify(array(Constants::PARAM_RELATIONSHIPS => (string) $includeRelationships));
         }
 
         if ($maxItems > 0) {
-            $url->getQuery()->modify([Constants::PARAM_MAX_ITEMS => (string) $maxItems]);
+            $url->getQuery()->modify(array(Constants::PARAM_MAX_ITEMS => (string) $maxItems));
         }
 
-        return $this->getJsonConverter()->convertQueryResultList((array) $this->postJson($url));
+        $responseData = $this->read($url)->json();
+
+        return $this->getJsonConverter()->convertQueryResultList($responseData);
     }
 }
