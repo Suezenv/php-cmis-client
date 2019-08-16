@@ -126,7 +126,7 @@ class DiscoveryService extends AbstractBrowserBindingService implements Discover
 
         $url->getQuery()->modify(
             array(
-                Constants::CONTROL_CMISACTION => Constants::CMISACTION_QUERY,
+                Constants::PARAM_SELECTOR => Constants::CMISACTION_QUERY,
                 Constants::PARAM_STATEMENT => (string) $statement,
                 Constants::PARAM_SEARCH_ALL_VERSIONS => $searchAllVersions ? 'true' : 'false',
                 Constants::PARAM_ALLOWABLE_ACTIONS => $includeAllowableActions ? 'true' : 'false',
@@ -144,7 +144,7 @@ class DiscoveryService extends AbstractBrowserBindingService implements Discover
             $url->getQuery()->modify(array(Constants::PARAM_MAX_ITEMS => (string) $maxItems));
         }
 
-        $responseData = $this->post($url)->json();
+        $responseData = $this->read($url)->json();
 
         return $this->getJsonConverter()->convertQueryResultList($responseData);
     }
